@@ -14,8 +14,8 @@
 #################################################
 
 # Set your local latitude and longitude for sun calculations
-latitude="38.9072N"
-longitude="77.0369W"
+latitude="35.3077N"
+longitude="80.7243W"
 
 # Set full path to the wallpaper theme folder
 # Theme folder names:
@@ -24,7 +24,7 @@ longitude="77.0369W"
 # Apple: The-Beach The-Cliffs The-Lake The-Desert
 # Louis Coyle: Lakeside
 # 
-wallpaperPath="$HOME/sunpaper/images/Corporate-Synergy"
+wallpaperPath="$HOME/Applications/sunpaper/images/Corporate-Synergy"
 
 # Set how you want your wallpaper displayed
 # stretch | center | tile | scale | zoom | fill
@@ -53,7 +53,7 @@ cachePath="$HOME/.cache"
 # make sure it's already set as your theme choice.
 #
 # moonphase_enable="true"
-moonphase_enable="false"
+moonphase_enable="true"
 
 
 #################################################
@@ -66,7 +66,7 @@ moonphase_enable="false"
 # make sure it's already set as your theme choice.
 #
 # weather_enable="true"
-weather_enable="false"
+weather_enable="true"
 
 # We're using an API from openweathermap.org
 # to get your local conditions. You'll need to sign
@@ -78,7 +78,7 @@ weather_api_key=""
 # Set your openweather city id number here.
 # Check on http://openweathermap.org/find
 #
-weather_city_id="4140963"
+weather_city_id="4460243"
 
 
 #################################################

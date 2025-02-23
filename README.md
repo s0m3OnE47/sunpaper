@@ -19,15 +19,15 @@ Compatible with any distribution and window manager (X or wayland).
 
 - [x] [Live Weather mode](https://github.com/hexive/sunpaper/wiki/Live-Weather-Mode) - show wallpapers based on weather outside
 - [x] [Moonphase Mode](https://github.com/hexive/sunpaper/wiki/Moonphase-Mode) - show wallpapers reflecting the correct phase of the moon.
+- [x] [Animation with swww mode](https://github.com/hexive/sunpaper/wiki/Animation-swww-Mode) - animate image transitions with [swww](https://github.com/Horus645/swww).
 - [x] [Darkmode](https://github.com/hexive/sunpaper/wiki/Darkmode) - run external scripts on a day/night trigger
 - [x] [Pywal mode](https://github.com/hexive/sunpaper/wiki/Pywal-Mode) - get on-the-fly color scheme changes for each wallpaper change.
 - [x] [Waybar mode](https://github.com/hexive/sunpaper/wiki/Waybar-Mode) - display icon and transition report as tooltip
-- [x] [Sway/Oguri mode](https://github.com/hexive/sunpaper/wiki/Sway-Oguri-Mode) - no-flash wallpaper changes in sway
+
 
 ## TODO
 
 - [ ] More original content FOSS wallpaper themes
-- [ ] More custom status bar modes  
 
 
 ## Install
@@ -38,6 +38,9 @@ Check the [wiki](https://github.com/hexive/sunpaper/wiki) for full documentation
 1. [Test it](https://github.com/hexive/sunpaper/wiki/Test-it) 
 1. [Set it to run automatically](https://github.com/hexive/sunpaper/wiki/Set-it-to-run-automatically) 
 
+Alternatively install as package in:  
+- Arch from AUR: `yay sunpaper`
+- Nix: `nix-env -iA sunpaper`  
 
 ## Why Sunpaper?
 

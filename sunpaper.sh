@@ -9,6 +9,7 @@
 # There's also pretty good documentation on the wiki
 # https://github.com/hexive/sunpaper/wiki
 
+
 #################################################
 # BASIC CONFIGURATION
 #################################################
@@ -19,7 +20,6 @@ longitude="80.7243W"
 
 # Set full path to the wallpaper theme folder
 # Theme folder names:
-#
 # Blake Watson & Sunpaper: Corporate-Synergy
 # Apple: The-Beach The-Cliffs The-Lake The-Desert
 # Louis Coyle: Lakeside
@@ -28,7 +28,7 @@ wallpaperPath="$HOME/Applications/sunpaper/images/Corporate-Synergy"
 
 # Set how you want your wallpaper displayed
 # stretch | center | tile | scale | zoom | fill
-wallpaperMode="scale"
+wallpaperMode="stretch"
 
 # Sunpaper writes some cache files to keep track of 
 # persistent variables.
@@ -79,6 +79,36 @@ weather_api_key=""
 # Check on http://openweathermap.org/find
 #
 weather_city_id="4460243"
+
+
+#################################################
+# Animate transitions with SWWW MODE 
+# requires (https://github.com/Horus645/swww)
+# and Wayland
+#################################################
+#
+# For smooth low memory animated transitions between 
+# images.
+#
+# This also resolves the gray flash in Sway whenever changing
+# wallpaper. (https://github.com/swaywm/sway/issues/3693)
+#
+# enable this mode here with 
+# swww_enable="true"
+swww_enable="false"
+
+# swww should already be installed and configured.
+# sunpaper will launch the swww daemon if it's not
+# already started.
+
+# swww takes two options for animation control of the
+# transition between images: frame rate and step (more
+# info: https://github.com/Horus645/swww/issues/51)
+#
+# swww_fps <1 to 255>
+# swww_step <1 to 255>
+swww_fps="3"
+swww_step="3"
 
 
 #################################################
@@ -145,29 +175,6 @@ status_icon=""
 
 
 #################################################
-# SWAY / OGURI MODE 
-# requires (https://github.com/vilhalmer/oguri)
-#################################################
-# Sway has an known issue https://github.com/swaywm/sway/issues/3693
-# that causes a gray flash whenever changing wallpaper.
-# Oguri uses an IPC which allows for smoother
-# no-flash wallpaper changes in sway.
-#
-# enable this mode here with 
-# oguri_enable="true"
-oguri_enable="false"
-
-# oguri should already be installed and configured.
-# sunpaper will launch the oguri socket with the
-# location of your oguri configuration file set here
-oguri_config="$HOME/.config/oguri/config"
-
-# oguri takes three options for wallpaper display
-# fill | tile | stretch
-wallpaperModeOguri="fill"
-
-
-#################################################
 # EXTERNAL CONFIGURATION
 #################################################
 # Congratulations you've found a super secret undocumented
@@ -186,20 +193,32 @@ wallpaperModeOguri="fill"
 
 
 #Sunpaper Version History
-#2.26 - initial commit
-#2.27 - functionize & option flags
-#2.28 - new darkmode feature
-#3.01 - new waybar feature
-#3.03 - pywall integration
-#3.05 - oguri integration
-#3.17 - moonphase & weather
+#
+#1.0 - initial commit
+#1.1 - functionize & option flags
+#1.2 - new darkmode feature
+#1.3 - new waybar feature
+#1.4 - pywall integration
+#1.5 - oguri integration (ended with 2.0)
+#1.6 - moonphase & weather
+#2.0 - swww animations & let it snow
+#2.1 - I use Arch, btw. AUR support
 
-version="3.17"
+version="2.1"
 
 # Check for external config file
 CONFIG_FILE=$HOME/.config/sunpaper/config
 if [ -f "$CONFIG_FILE" ];then
     . "$CONFIG_FILE"
+else
+	# if not found, check if a default exists in /usr/share/sunpaper/ 
+    SYSTEM_CONFIG_FILE=/usr/share/sunpaper/config
+    if [ -f "$SYSTEM_CONFIG_FILE" ];then
+		# and copy it to ~/.config/sunpaper/config if it exists
+        mkdir -p $HOME/.config/sunpaper
+		cp "$SYSTEM_CONFIG_FILE" "$CONFIG_FILE"
+		. "$CONFIG_FILE"
+    fi
 fi
 
 #Trim any trailing slashes from paths
@@ -220,6 +239,7 @@ set_cache(){
         touch "$cacheFileWall"
         echo "0" > "$cacheFileWall"
         currentpaper=0
+        swww_first="true"
     fi
 
 }
@@ -413,7 +433,7 @@ setpaper_construct(){
     ################
     # Weather
 
-    if [[ "$weather_enable" == "true" ]] && [[ "$wallpaperPath" == *"Corporate-Synergy"* ]];then 
+    if [[ "$weather_enable" == "true" ]] && [[ -f "$wallpaperPath/rain/1.jpg" ]];then 
 
         #currentWeather should already be set 
         #cloud is both the default weather and not in special directory
@@ -432,7 +452,7 @@ setpaper_construct(){
     ################
     # m-o-o-n that spells tom cullen
 
-    if [ "$moonphase_enable" == "true" ] && [[ "$wallpaperPath" == *"Corporate-Synergy"* ]];then 
+    if [ "$moonphase_enable" == "true" ] && [[ -f "$wallpaperPath/moons/1-1.jpg" ]];then 
 
         if [ $image == 1 ] || [ $image == 2 ] || [ $image == 8 ];then
 
@@ -453,21 +473,31 @@ setpaper_construct(){
 
 
     ################
-    # Oguri
+    # SWWW
 
-    if [ "$oguri_enable" == "true" ];then 
+    if [ "$swww_enable" == "true" ];then 
 
-        # Check for oguri socket and launch it if it isn't running
-        exec_oguri
+        # Check for swww dameon and launch it if it isn't running
+        exec_swww
 
         #TODO: is there a need to make this configurable?
         #output $display_output
 
-        # it takes awhile for that socket to start so make sure there's success before moving on
-        until ogurictl output \* --scaling-mode "$wallpaperModeOguri" --image "$wallpaperPath"/"$image".jpg > /dev/null 2>&1; do
-            ((c++)) && ((c==10)) && break
-            sleep 1
-        done
+        # it takes awhile for that daemon to start so make sure there's success before moving on
+
+        if [ "$swww_first" == "true" ];then 
+            # don't animate first load image
+            until swww img "$wallpaperPath"/"$image".jpg --transition-step 255 --transition-fps 255 > /dev/null 2>&1; do
+                 ((c++)) && ((c==10)) && break
+                sleep 1
+            done
+        else 
+        
+            until swww img "$wallpaperPath"/"$image".jpg --transition-step "$swww_fps" --transition-fps "$swww_step" > /dev/null 2>&1; do
+                 ((c++)) && ((c==10)) && break
+                 sleep 1
+            done
+        fi
 
     else
         ################
@@ -524,19 +554,22 @@ get_moonphase(){
     # adapted from https://github.com/nikospag/bash-moon-phase/blob/master/Moon_old
 
     lp=2551443 #Lunar period (unix time in seconds)=29.53 days
-    now=$(date -u +"%s") #Time now (unix time)
+    now=$(date -u +"%s") #Time now (unix time UTC)
     newmoon=592500 #Known new moon time (unix time). 7 Jan 1970 20:35
     phase=$((($now - $newmoon) % $lp))
     phase_number=$(echo 'scale=0; '${phase}'/86.400' | bc -l)
 
+    #new moon math -- showing new quarter and full moons for aprox 2 days
+
     if [[ $phase_number -ge 0 ]] && [[ $phase_number -lt 1000 ]];  then phase_addendum="-1"  # new
-    elif [[ $phase_number -ge 1000 ]] && [[ $phase_number -lt 6560 ]];  then phase_addendum="-2"  # waxing crescent
-    elif [[ $phase_number -ge 6560 ]] && [[ $phase_number -lt 7560 ]];  then phase_addendum="-3"  # first quarter
-    elif [[ $phase_number -ge 7560 ]] && [[ $phase_number -lt 14265 ]]; then phase_addendum="-4"  # waxing gibbous
-    elif [[ $phase_number -ge 14265 ]] && [[ $phase_number -lt 15265 ]]; then phase_addendum="-5"  # full
-    elif [[ $phase_number -ge 15265 ]] && [[ $phase_number -lt 21260 ]]; then phase_addendum="-6"  # waning gibbous
-    elif [[ $phase_number -ge 21260 ]] && [[ $phase_number -lt 22260 ]]; then phase_addendum="-7"  # last quarter
-    elif [[ $phase_number -ge 22260 ]] && [[ $phase_number -lt 29530 ]]; then phase_addendum="-8"  # waning crescent
+    elif [[ $phase_number -ge 1000 ]] && [[ $phase_number -lt 6382 ]];  then phase_addendum="-2"  # waxing crescent
+    elif [[ $phase_number -ge 6382 ]] && [[ $phase_number -lt 8382 ]];  then phase_addendum="-3"  # first quarter
+    elif [[ $phase_number -ge 8382 ]] && [[ $phase_number -lt 13765 ]]; then phase_addendum="-4"  # waxing gibbous
+    elif [[ $phase_number -ge 13765 ]] && [[ $phase_number -lt 15765 ]]; then phase_addendum="-5"  # full
+    elif [[ $phase_number -ge 15765 ]] && [[ $phase_number -lt 21147 ]]; then phase_addendum="-6"  # waning gibbous
+    elif [[ $phase_number -ge 21147 ]] && [[ $phase_number -lt 23147 ]]; then phase_addendum="-7"  # last quarter
+    elif [[ $phase_number -ge 23147 ]] && [[ $phase_number -lt 28530 ]]; then phase_addendum="-8"  # waning crescent
+    else phase_addendum="-1" # back to new
     fi
 }
 
@@ -600,7 +633,7 @@ get_weather(){
 
     else
         weather_info=$(wget -qO- "$weather_url")
-        weather_main=$(echo "$weather_info" | grep -o -e '\"main\":\"[a-zA-Z]*\"' | awk -F ':' '{print $2}' | tr -d '"')
+        weather_main=$(echo "$weather_info" | grep -o -e '"main":"[a-zA-Z]*"' | awk -F ':' '{print $2}' | tr -d '"')
     fi
 
 
@@ -619,9 +652,6 @@ get_weather(){
                 
     else 
 
-        # TODO: HO HO HO we need some snow wallpapers
-        # [[ "$weather_main" = *Snow* ]]
-
         if [[ "$weather_main" = *Rain* ]] || [[ "${weather_main}" = *Drizzle* ]] || [[ "$weather_main" = *Mist* ]]; then
             currentWeather="rain"
 
@@ -634,6 +664,9 @@ get_weather(){
         elif [[ "$weather_main" = *Fog* ]] || [[ "$weather_main" = *Haze* ]] || [[ "$weather_main" = *Smoke* ]] || [[ "$weather_main" = *Dust* ]] || [[ "$weather_main" = *Sand* ]] || [[ "$weather_main" = *Ash* ]]; then
             currentWeather="fog"
 
+        elif [[ "$weather_main" = *Snow* ]] || [[ "$weather_main" = *Sleet* ]] ; then
+            currentWeather="snow"
+
         else
             currentWeather="cloud"
 
@@ -642,15 +675,24 @@ get_weather(){
     fi
 }
 
-exec_oguri(){
+exec_swww(){
 
-    #Check if oguri socket is already running
-    if pgrep -x "oguri" > /dev/null ;then
+    #Check if swww daemon is already running
+    if pgrep -x "swww" > /dev/null ;then
         #do nothing
         true
+
     else
-        nohup oguri -c "$oguri_config" > /dev/null 2>&1 &
+        nohup swww init > /dev/null 2>&1 &
+
     fi
+}
+
+pkill_daemon(){
+    #TODO: does this need to be smarter?
+    echo "The Sunpaper daemon has stopped."
+    pkill sunpaper.sh > /dev/null 2>&1 &
+
 }
 
 show_help(){
@@ -678,16 +720,21 @@ Sunpaper Option Flags (cannot be combined)
                 like in different weather (weather is normally
                 cached for a period of time so you may need to 
                 call -c first to see changes)
-                Clear | Clouds | Rain | Thunderstorm | Fog  
+                Clear | Clouds | Rain | Thunderstorm | Fog | Snow 
 
 -w, --waybar,   Waybar! Use sway/waybar? Call sunpaper.sh with this 
                 flag in the waybar config and it will display
                 an icon in the bar and show the full sun time report
                 as a tooltip.
 
+-d, --daemon,   Daemon! Start sunpaper with this flag and it will
+                run continuiously in the background.
+
+-k, --kill,     Kill! Use this flag if you'd like to stop the 
+                sunpaper daemon.
+
 EOF
 }
-
 
 while :; do
     case $1 in
@@ -727,27 +774,62 @@ while :; do
         -w|--waybar) 
             waybarmode_enable="true"
             shift
+                ;;
+        -d|--daemon) 
+            daemon_enable="true"
+                ;;
+        -k|--kill) 
+            pkill_daemon
+            exit
         ;;
         *) break
     esac
     shift
 done
 
-# Start Calling Functions
-get_currenttime
-get_suntimes
-set_cache
+main(){
+    get_currenttime
+    get_suntimes
+    set_cache
 
-if [[ "$weather_enable" == "true" ]];then
-    check_weather
-fi
+    if [[ "$weather_enable" == "true" ]];then
+        check_weather
+    fi
 
-set_paper
+    set_paper
 
-if [ "$darkmode_enable" == "true" ]; then
-    local_darkmode
-fi
+    if [ "$darkmode_enable" == "true" ]; then
+        local_darkmode
+    fi
 
-if [ "$waybarmode_enable" == "true" ]; then
-    show_suntimes_waybar
+    if [ "$waybarmode_enable" == "true" ]; then
+        show_suntimes_waybar
+    fi
+}
+
+if [ "$daemon_enable" == "true" ]; then
+
+    #Clear cache for first run 
+    clear_cache > /dev/null 2>&1
+
+    #Always call main 
+    #to make sure paper is still set for WM logout/login if daemon already exists, etc)
+    main
+
+    #TODO: maybe this should be quiet?
+    echo "The Sunpaper daemon has started -- use sunpaper.sh -k to stop it."
+
+    #Try to prevent generating duplicate daemons.
+    if [[ $(pgrep -c "sunpaper.sh") -gt 1 ]] ;then
+        #do nothing
+        true
+    else
+        #Then loop forever
+        while :; do
+            main &
+            sleep 60
+        done &
+    fi
+else
+    main
 fi
